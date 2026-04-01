@@ -7210,6 +7210,44 @@ Use type "content" for content review weeks, "aamc" when AAMC FLs are the focus,
       #groq-panel { right: 1rem; width: calc(100vw - 2rem); bottom: 5rem; }
       #groq-fab { right: 1rem; bottom: 1rem; }
     }
+
+    /* ── CARD HOVER LIFT ── */
+    .card { transition: border-color 0.22s, box-shadow 0.22s, transform 0.22s; }
+    .card:hover {
+      border-color: rgba(79,142,247,0.25);
+      box-shadow: 0 6px 28px rgba(79,142,247,0.06), 0 2px 6px rgba(0,0,0,0.18);
+      transform: translateY(-2px);
+    }
+
+    /* ── SIDEBAR ACTIVE LEFT BORDER ── */
+    .sb-item.active {
+      border-left: 2px solid var(--accent) !important;
+      padding-left: calc(0.75rem - 2px) !important;
+    }
+
+    /* ── CUSTOM SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ── BUTTON SHINE SWEEP ── */
+    .practice-launch-btn, .gpa-action-btn.primary,
+    #ps-feedback-btn, #ai-feedback-btn {
+      position: relative; overflow: hidden;
+    }
+    .practice-launch-btn::after, .gpa-action-btn.primary::after,
+    #ps-feedback-btn::after, #ai-feedback-btn::after {
+      content: ''; position: absolute;
+      top: -50%; left: -70%;
+      width: 40%; height: 200%;
+      background: rgba(255,255,255,0.15);
+      transform: rotate(25deg);
+      transition: left 0.4s ease; pointer-events: none;
+    }
+    .practice-launch-btn:hover::after, .gpa-action-btn.primary:hover::after,
+    #ps-feedback-btn:hover::after, #ai-feedback-btn:hover::after { left: 130%; }
+
   </style>
 
   <button id="groq-fab" title="Ask Groq AI">⚡</button>
