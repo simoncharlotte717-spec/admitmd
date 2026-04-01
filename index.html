@@ -3858,6 +3858,34 @@
   <div id="tab-gpa" class="tab-panel">
     <h1>GPA Calculator</h1>
     <p class="page-intro">Calculate your AMCAS GPA exactly as medical schools will see it. Add all your courses, choose the subject type, and watch your science (BCPM) and overall GPA update instantly.</p>
+
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3 style="margin-bottom:0.75rem">School GPA vs. AMCAS GPA — Side by Side</h3>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">Your school GPA may be higher than AMCAS calculates — because AMCAS counts every attempt at every course (no grade replacement). Enter your transcript GPA to see the difference.</p>
+      <div style="display:flex;gap:1.25rem;flex-wrap:wrap;align-items:flex-end">
+        <div>
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:0.35rem">Your Transcript GPA</label>
+          <input type="number" id="school-gpa-input" min="0" max="4.0" step="0.01" placeholder="e.g. 3.85" oninput="updateGPAComparison()" style="width:140px;padding:0.5rem 0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1rem;font-weight:600">
+        </div>
+        <div style="flex:1;min-width:260px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.85rem 1rem;display:flex;gap:1.5rem;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.2rem">School GPA</div>
+            <div id="compare-school-gpa" style="font-size:1.6rem;font-weight:800;color:var(--accent)">—</div>
+          </div>
+          <div style="display:flex;align-items:center;color:var(--muted);font-size:1.2rem">→</div>
+          <div style="text-align:center">
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.2rem">AMCAS GPA</div>
+            <div id="compare-amcas-gpa" style="font-size:1.6rem;font-weight:800;color:var(--accent)">—</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.2rem">Difference</div>
+            <div id="compare-diff" style="font-size:1.6rem;font-weight:800;color:var(--muted)">—</div>
+          </div>
+        </div>
+      </div>
+      <p id="compare-note" style="font-size:0.8rem;color:var(--muted);margin-top:0.75rem;display:none"></p>
+    </div>
+
     <div class="gpa-stats-bar">
       <div class="gpa-stat-box"><div class="gpa-stat-label">Overall GPA</div><div class="gpa-stat-val" id="gpa-overall">—</div></div>
       <div class="gpa-stat-box"><div class="gpa-stat-label">Science (BCPM)</div><div class="gpa-stat-val" id="gpa-bcpm">—</div></div>
@@ -4220,6 +4248,17 @@ With gratitude,
         <li><strong style="color:var(--text)">May:</strong> Final revisions, proofreading, character count check</li>
         <li><strong style="color:var(--text)">June 1:</strong> Submit with your primary application — don't wait</li>
       </ul>
+    </div>
+
+    <div class="section-title" style="margin-top:2rem">AI PERSONAL STATEMENT REVIEWER</div>
+    <div class="card">
+      <p style="font-size:0.875rem;color:var(--muted);margin-bottom:1rem">Paste your draft below and get instant AI feedback on your hook, narrative, voice, red flags, and overall score. Powered by Groq AI — your statement is never stored.</p>
+      <textarea id="ps-input" placeholder="Paste your personal statement here…" oninput="updatePSCount()" style="width:100%;min-height:220px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.85rem;color:var(--text);font-size:0.875rem;resize:vertical;font-family:inherit;box-sizing:border-box;line-height:1.6"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.4rem;flex-wrap:wrap;gap:0.5rem">
+        <div id="ps-char-count" style="font-size:0.78rem;color:var(--muted)">0 / 5,300 characters</div>
+        <button onclick="getPSFeedback()" id="ps-feedback-btn" style="padding:0.55rem 1.3rem;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.875rem">⚡ Review My Statement</button>
+      </div>
+      <div id="ps-feedback-result" style="display:none;margin-top:1.25rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.1rem;font-size:0.875rem;line-height:1.7;white-space:pre-wrap"></div>
     </div>
   </div>
 
@@ -5485,6 +5524,7 @@ With gratitude,
     const el = (id,v) => { const e=document.getElementById(id); if(e){e.textContent=v; e.className='gpa-stat-val '+color(v);} };
     el('gpa-overall',ov); el('gpa-bcpm',bc); el('gpa-non',no);
     const cr = document.getElementById('gpa-credits'); if(cr) cr.textContent=totalCr;
+    updateGPAComparison();
   }
 
   // Load saved GPA data when tab opens
@@ -6110,6 +6150,72 @@ Use type "content" for content review weeks, "aamc" when AAMC FLs are the focus,
   function endPractice() {
     clearInterval(practiceTimerInterval);
     document.getElementById('practicePanel').style.display = 'none';
+  }
+
+  function updatePSCount() {
+    const len = document.getElementById('ps-input').value.length;
+    const el = document.getElementById('ps-char-count');
+    el.textContent = `${len.toLocaleString()} / 5,300 characters`;
+    el.style.color = len > 5300 ? '#ef4444' : len > 4800 ? '#f59e0b' : 'var(--muted)';
+  }
+
+  async function getPSFeedback() {
+    const ps = document.getElementById('ps-input').value.trim();
+    if (!ps || ps.length < 100) { alert('Please paste your personal statement first.'); return; }
+    const btn = document.getElementById('ps-feedback-btn');
+    const result = document.getElementById('ps-feedback-result');
+    btn.disabled = true; btn.textContent = '⚡ Analyzing…';
+    result.style.display = 'block'; result.textContent = 'Reviewing your personal statement…';
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are an expert medical school admissions advisor who has reviewed thousands of personal statements. Give honest, specific, actionable feedback. Reference specific parts of the statement. Be encouraging but direct about weaknesses.' },
+            { role: 'user', content: `Review this medical school personal statement and respond in this exact format:\n\nOverall Score: X/10\n\nOpening Hook:\n[Does it draw the reader in? Is it scene-based or generic?]\n\nWhy Medicine Narrative:\n[Is their reason for medicine clear, specific, and compelling?]\n\nVoice & Authenticity:\n[Does it sound like a real person or a generic applicant?]\n\nRed Flags:\n[Clichés, mistakes, or anything that could hurt them]\n\nStrongest Moment:\n[The single most compelling part of the essay — quote it briefly]\n\nTop 2 Improvements:\n1. [Specific, actionable change]\n2. [Specific, actionable change]\n\nPersonal Statement:\n${ps}` }
+          ],
+          max_tokens: 750,
+          temperature: 0.7
+        })
+      });
+      const data = await res.json();
+      result.textContent = data.choices?.[0]?.message?.content || 'No feedback returned. Try again.';
+    } catch(e) { result.textContent = 'Error getting feedback. Check your connection and try again.'; }
+    btn.disabled = false; btn.textContent = '⚡ Review My Statement';
+  }
+
+  function updateGPAComparison() {
+    const schoolGPA = parseFloat(document.getElementById('school-gpa-input').value);
+    const amcasEl = document.getElementById('gpa-overall').textContent;
+    const amcasGPA = parseFloat(amcasEl);
+    const schoolEl = document.getElementById('compare-school-gpa');
+    const amcasCompEl = document.getElementById('compare-amcas-gpa');
+    const diffEl = document.getElementById('compare-diff');
+    const noteEl = document.getElementById('compare-note');
+
+    if (!isNaN(schoolGPA)) {
+      schoolEl.textContent = schoolGPA.toFixed(2);
+      if (!isNaN(amcasGPA)) {
+        amcasCompEl.textContent = amcasGPA.toFixed(2);
+        const diff = amcasGPA - schoolGPA;
+        diffEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2);
+        diffEl.style.color = diff < -0.1 ? '#ef4444' : diff > 0.05 ? '#10b981' : 'var(--muted)';
+        noteEl.style.display = 'block';
+        noteEl.textContent = diff < -0.05
+          ? `Your AMCAS GPA is ${Math.abs(diff).toFixed(2)} lower than your transcript — likely due to repeated courses both counting. Build your school list using the AMCAS number.`
+          : diff > 0.05
+          ? `Your AMCAS GPA is slightly higher — this can happen with certain grading scales. Double-check by entering all courses in the table below.`
+          : `Your school GPA and AMCAS GPA are very close. Good sign — no major repeat-course penalty.`;
+      } else {
+        amcasCompEl.textContent = '—';
+        noteEl.style.display = 'block';
+        noteEl.textContent = 'Add your courses in the table below to calculate your AMCAS GPA.';
+      }
+    } else {
+      schoolEl.textContent = '—';
+    }
   }
 
   async function getAIFeedback() {
