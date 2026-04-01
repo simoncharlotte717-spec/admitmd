@@ -4046,6 +4046,11 @@ With gratitude,
         <div class="practice-type-badge" id="practiceTypeBadge">MMI</div>
         <div class="practice-question" id="practiceQ">…</div>
         <div class="practice-timer" id="practiceTimer">8:00</div>
+        <div id="ai-response-box" style="margin-top:1.2rem">
+          <textarea id="ai-response-input" placeholder="Type your response here after answering out loud…" style="width:100%;min-height:90px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.75rem;color:var(--text);font-size:0.875rem;resize:vertical;font-family:inherit;box-sizing:border-box;line-height:1.5"></textarea>
+          <button onclick="getAIFeedback()" id="ai-feedback-btn" style="margin-top:0.5rem;padding:0.55rem 1.3rem;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.875rem;display:inline-flex;align-items:center;gap:0.4rem">⚡ Get AI Feedback</button>
+          <div id="ai-feedback-result" style="display:none;margin-top:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;font-size:0.875rem;line-height:1.65;white-space:pre-wrap"></div>
+        </div>
         <div class="practice-nav">
           <button class="practice-nav-btn" onclick="nextPracticeQ()">Next Question →</button>
           <button class="practice-nav-btn" onclick="togglePracticeTimer()" id="practicePauseBtn">Pause</button>
@@ -4435,6 +4440,9 @@ With gratitude,
       </table>
       <div class="no-results" id="noResults" style="display:none">No schools match your search.</div>
     </div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-top:0.75rem;line-height:1.5">
+      Stats shown are approximate averages for recent matriculant classes. Values may differ slightly from current MSAR data, which updates annually. Always verify with the official <a href="https://students-residents.aamc.org/medical-school-admission-requirements/medical-school-admission-requirements" target="_blank" style="color:var(--accent)">AAMC MSAR</a> before finalizing your school list.
+    </p>
   </div>
 
 
@@ -6069,6 +6077,9 @@ Use type "content" for content review weeks, "aamc" when AAMC FLs are the focus,
     document.getElementById('practiceTypeBadge').textContent = item.type === 'mmi' ? 'MMI' : 'Traditional';
     document.getElementById('practiceTypeBadge').className = 'practice-type-badge ' + (item.type === 'mmi' ? 'badge-mmi' : 'badge-trad');
     document.getElementById('practiceQ').textContent = item.q;
+    document.getElementById('ai-response-input').value = '';
+    document.getElementById('ai-feedback-result').style.display = 'none';
+    document.getElementById('ai-feedback-result').textContent = '';
     document.getElementById('practicePauseBtn').textContent = 'Pause';
     practicePaused = false;
     practiceSecondsLeft = item.type === 'mmi' ? 8 * 60 : 5 * 60;
@@ -6099,6 +6110,40 @@ Use type "content" for content review weeks, "aamc" when AAMC FLs are the focus,
   function endPractice() {
     clearInterval(practiceTimerInterval);
     document.getElementById('practicePanel').style.display = 'none';
+  }
+
+  async function getAIFeedback() {
+    const response = document.getElementById('ai-response-input').value.trim();
+    if (!response) { alert('Type your response first, then click Get AI Feedback.'); return; }
+    const question = document.getElementById('practiceQ').textContent;
+    const qType = document.getElementById('practiceTypeBadge').textContent;
+    const btn = document.getElementById('ai-feedback-btn');
+    const result = document.getElementById('ai-feedback-result');
+    btn.disabled = true;
+    btn.textContent = '⚡ Analyzing…';
+    result.style.display = 'block';
+    result.textContent = 'Getting feedback…';
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ_API_KEY },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are an expert medical school interview coach. Give honest, specific, actionable feedback on the applicant\'s interview response. Be direct and constructive — they need real feedback, not flattery.' },
+            { role: 'user', content: `Interview type: ${qType}\nQuestion: ${question}\n\nApplicant response:\n${response}\n\nGive feedback in this exact format:\n\nScore: X/10\n\nStrengths:\n- [specific strength]\n- [specific strength]\n\nAreas to Improve:\n- [specific improvement]\n- [specific improvement]\n\nKey Tip:\n[One concrete, actionable tip they can apply to their next answer]` }
+          ],
+          max_tokens: 450,
+          temperature: 0.7
+        })
+      });
+      const data = await res.json();
+      result.textContent = data.choices?.[0]?.message?.content || 'No feedback returned. Try again.';
+    } catch(e) {
+      result.textContent = 'Error getting feedback. Check your connection and try again.';
+    }
+    btn.disabled = false;
+    btn.textContent = '⚡ Get AI Feedback';
   }
 
   // ── LOR TRACKER ──
